@@ -55,12 +55,13 @@ This script runs several scripts, all located in the **./code** subfolder.
     + Creates Figure 3 and Figure 6 (in Appendix A1).
     + Figure 3 illustrates results of the second simulation, comparing tsBART and BART.
     + Figure 6 is example of tuning expected number of crossings.
-* **figure-04.R**
+* **figure-04-and-table-04.R**  
+    + Fits models to up-sampled stillbirth data. 
+    + Creates Figure 4 and Table 4.
+    + The file ending in "-single-iteration.R" illustrates the fit for a single dataset instead of all five runs.
+* **figure-05.R**
     + Fits models to stillbirth data.
     + Creates Figure 4 to show estimated stillbirth risk curves for each method.
-* **figure-05-and-table-04.R**  
-    + Fits models to up-sampled stillbirth data. 
-    + Creates Figure 5 and Table 4.
-
+    
 ## Helper functions.
 There are several helper functions in the analysis that are used for cleaning data, assembling tables, etc.  These are not included in the **tsbart** package, but are available in **/code/helper-functions/**.  (These are sourced by other scripts as needed.)

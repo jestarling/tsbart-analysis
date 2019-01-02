@@ -122,6 +122,6 @@ ll_plt = ggplot(binll_rel, aes(x=gest_age, y=bll_relto_tsb, colour=method)) +
    labs(x='Gestational age (Wks)', y='Out of sample logl relative to tsBART') +
    scale_colour_Publication()+ theme_Publication()
 
-ggsave('./output-figures/figure-05.pdf', ll_plt,
+ggsave('./output-figures/figure-04.pdf', ll_plt,
        width=8, height=8, units='in', dpi=300, limitsize=TRUE)
 

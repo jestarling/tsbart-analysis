@@ -241,5 +241,5 @@ all = grid.arrange(row1, row2, row3, row4, row5,
              left='Risk of stillbirth per 1,000 remaining pregnancies',
              top='       Patient 1                   Patient 2                   Patient 3                 Patient 4                Patient 5')
 
-ggsave(paste0(out.fig,'figure-04.pdf'), all,
+ggsave(paste0(out.fig,'figure-05.pdf'), all,
        width=8, height=8, units='in', dpi=300, limitsize=TRUE)

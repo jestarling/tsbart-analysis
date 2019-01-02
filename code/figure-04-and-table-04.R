@@ -120,7 +120,7 @@ bll_tbl = binll_oos %>%
 colnames(bll_tbl)[2:10] = 34:42
 
 tbl_4 = binll_oos %>% filter(gest_age34 =='all') %>% select(method,logl)
-#write.csv(tbl_4, './output-files/table-04.csv', row.names=F)
+write.csv(tbl_4, './output-files/table-04.csv', row.names=F)
 
 #--------------------------------------------------------------------------
 # Save and plot results.
@@ -138,5 +138,5 @@ ll_plt = ggplot(binll_rel, aes(x=gest_age, y=bll_relto_tsb, colour=method)) +
    labs(x='Gestational age (Wks)', y='Out of sample logl relative to tsBART') +
    scale_colour_Publication()+ theme_Publication()
 
-#ggsave('./output-figures/figure-05.pdf', ll_plt,
-#       width=8, height=8, units='in', dpi=300, limitsize=TRUE)
+ggsave('./output-figures/figure-04.pdf', ll_plt,
+      width=8, height=8, units='in', dpi=300, limitsize=TRUE)
