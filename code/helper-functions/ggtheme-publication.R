@@ -1,4 +1,4 @@
-theme_Publication <- function(base_size=13, base_family="Helvetica") {
+theme_Publication <- function(base_size=16, base_family="Helvetica") {
    library(grid)
    library(ggthemes)
    (theme_foundation(base_size=base_size, base_family=base_family)

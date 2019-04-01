@@ -42,18 +42,18 @@ This script runs several scripts, all located in the **./code** subfolder.
 
 * **table-01.R**   
     + Generates Table 1 for cohort characteristics.  
-* **figure-02.R** 
+* **figure-03.R** 
     + Illustrates hazard data generated for first simulation, comparing coverage across methods.  
-* **table-02-a_generate-data.R**   
-* **table-02-b_one-example-run.R**   
+* **table-03-a_generate-data.R**   
+* **table-03-b_one-example-run.R**   
     + These two scripts illustrate how data sets for the first simulation are generated and fit.  
-    + This code does not replicate Table 2; Table 2 is the result of repeating this process on 500 datasets for each weighting scenario to calculate MSE and point-wise coverage for each method and weighting scenario combination.  
-* **table-03.R**  
+    + This code does not replicate Table 3; Table 3 is the result of repeating this process on 500 datasets for each weighting scenario to calculate MSE and point-wise coverage for each method and weighting scenario combination.  
+* **table-02.R**  
     + Repeats second simulation on 100 datasets to calculate log-likelihood.
-    + Creates Table 3.
-* **figure-03-and-figure06.R**  
-    + Creates Figure 3 and Figure 6 (in Appendix A1).
-    + Figure 3 illustrates results of the second simulation, comparing tsBART and BART.
+    + Creates Table 2.
+* **figure-02-and-figure06.R**  
+    + Creates Figure 2 and Figure 6 (in Appendix A1).
+    + Figure 2 illustrates results of the second simulation, comparing tsBART and BART.
     + Figure 6 is example of tuning expected number of crossings.
 * **figure-04-and-table-04.R**  
     + Fits models to up-sampled stillbirth data. 

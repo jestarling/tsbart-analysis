@@ -350,8 +350,8 @@ scenarios = unique(gsub( "-rep.*$", "", files))
 # Table assembly
 #===================================================================
 
-table = as.data.frame(matrix(NA,nrow=0,ncol=4))
-colnames(table) = c('in-sample BART', 'in-sample funBART', 'out-of-sample BART', 'out-of-sample funBART')
+table = as.data.frame(matrix(NA,nrow=0,ncol=5))
+colnames(table) = c('in-sample BART', 'in-sample funBART','out-of-sample BART', 'out-of-sample funBART','p-value')
 
 # Loop through scenarios.
 for(i in 1:length(scenarios)){
@@ -374,9 +374,47 @@ for(i in 1:length(scenarios)){
    
    table[i,] = c(meanstbl[2,3], meanstbl[1,3], meanstbl[4,3], meanstbl[3,3])
    rownames(table)[i] = substr(sc, 17, nchar(sc)-1)
+   
+   # #------------------------------------
+   # # In-sample p-value.
+   # #------------------------------------
+   # temp_fun = mydata %>% 
+   #    filter(dataset=="in-sample", model=="functional") %>% 
+   #    dplyr::group_by(scenario) %>%
+   #    summarize('logdens'=mean(logdensity))
+   # 
+   # temp_van = mydata %>% 
+   #    filter(dataset=="in-sample", model=="vanilla") %>% 
+   #    dplyr::group_by(scenario) %>%
+   #    summarize('logdens'=mean(logdensity))
+   # 
+   # temp_p = wilcox.test(x=temp_fun$logdens, y=temp_van$logdens)$p.value
+   # table[i,3] = temp_p
+   
+   #------------------------------------
+   # Out-of-sample p-value.
+   #------------------------------------
+   temp_fun = mydata %>% 
+      filter(dataset=="out-of-sample", model=="functional") %>% 
+      dplyr::group_by(scenario) %>%
+      summarize('logdens'=mean(logdensity))
+      
+   temp_van = mydata %>% 
+      filter(dataset=="out-of-sample", model=="vanilla") %>% 
+      dplyr::group_by(scenario) %>%
+      summarize('logdens'=mean(logdensity))
+   
+   temp_p = wilcox.test(x=temp_fun$logdens, y=temp_van$logdens)$p.value
+   table[i,5] = temp_p
+   
 }
 
-table = round(table,2)
+# Rounding and p-value formatting.
+table[,-5] = round(table[,-5],2)
+table[,5] = round(table[,5],3)
+table[,5] = as.character(table[,5])
+table[,5][which(table[,5]=="0")] = "<0.001"
+
 order = c(5,8,6,7,9,12,10,11,1,4,2,3)
 table = table[order,]
 
@@ -385,4 +423,6 @@ p = rep(c(4,8,20),each=4)
 n = rep(c(100,500,1000,2500),times=3)
 table = cbind.data.frame(p,n,table)
 
-fwrite(table,"./output-files/table-03.csv")
+
+
+fwrite(table,"./output-files/table-02.csv")

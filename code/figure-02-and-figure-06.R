@@ -4,6 +4,15 @@
 
 rm(list=ls())
 
+library(Rcpp)
+library(RcppArmadillo)
+library(dbarts)
+# source("/Users/jennstarling/Stats/research/tsbart/R/tsbart.R")
+# source("/Users/jennstarling/Stats/research/tsbart/R/tuneEcross.R")
+# source("/Users/jennstarling/Stats/research/tsbart/R/makeCutpoints.R")
+# sourceCpp("/Users/jennstarling/Stats/research/tsbart/src/tsbartFit.cpp")
+# sourceCpp("/Users/jennstarling/Stats/research/tsbart/src/checkFit.cpp")
+
 #===================================================================
 # User Inputs
 #===================================================================
@@ -21,14 +30,15 @@ filename = "/data/supp-simulations/tsb-sumofcosines-simdata-T8-p4-n100.csv"
 # Install tsbart package from local directory.
 library(devtools)
 install_github("jestarling/tsbart")
+library(tsbart)
 library(mosaic)
 library(tidyverse)
 library(gridExtra)
-library(tsbart)
-library(fastbart)
+
 
 # ggplot settings
-theme_set(theme_bw(base_size=13, base_family='Helvetica'))
+source('./code/helper-functions/ggtheme-publication.R')
+theme_set(theme_bw(base_size=16, base_family='Helvetica'))
 
 # Output directories.
 out.fig = paste0(getwd(),'/output-figures/')
@@ -47,7 +57,7 @@ exp_cross = NULL
 
 # Read csv file.
 sim = read.csv(paste0(getwd(),'/',filename))
-sim = read.csv("/Users/jennstarling/Stats/UTAustin/Research/tsbart-analysis/data/supp-simulations/tsb-sumofcosines-simdata-T8-p4-n100.csv")
+sim = read.csv("/Users/jennstarling/Stats/research/tsbart-analysis/data/supp-simulations/tsb-sumofcosines-simdata-T8-p4-n100.csv")
 
 # Set up train and test data sets.
 train = sim %>% filter(train=='train')
@@ -79,15 +89,16 @@ ecrossTune = tuneEcross(ecross_candidates,
 
 # Set expected number of crossings.
 exp_cross = ecrossTune$ecross_opt
+waic_plt = ecrossTune$waic_plot + theme_Publication()
 
 # Output figure for appendix.
 ggsave(paste0(out.fig,"figure-06.pdf"),
-       ecrossTune$waic_plot, height=5, width=7, dpi=300)
+       waic_plt, height=5, width=7, dpi=300)
 
 #===================================================================
 # Fit BART model.
 #===================================================================
-ntree = 200; nburn = 2000; nsim = 2000
+ntree = 200; nburn = 100; nsim = 10000
 
 fit = tsbart(y=y, tgt=ti, tpred=ti_pred, x=xx, xpred=x_pred, 
       nburn, nsim, ntree, ecross=exp_cross, use_fscale=T)
@@ -111,11 +122,15 @@ ggdf_pred = cbind.data.frame(
 
 ggdf_pred$label = paste0('Patient ',ggdf_pred$id)
 
+# Add prediction interval.
+ggdf_pred$pred_int_lb = ggdf_pred$lb - mean(fit$sigma)
+ggdf_pred$pred_int_ub = ggdf_pred$ub + mean(fit$sigma)
+
 # Select a few IDs to include.
 id_sel = c(5,41,79,98)
 
 # Set plotting limits.
-ylims = c(min(ggdf_pred$lb)-.5, max(ggdf_pred$ub)+.5)
+ylims = c(min(ggdf_pred$pred_int_lb)-.5, max(ggdf_pred$pred_int_ub)+.5)
 
 # Plot out-of-sample fit for each curve over time, for combos of covariates x.
 p1 <- ggplot(ggdf_pred %>% filter(id %in% id_sel)) +
@@ -123,16 +138,20 @@ p1 <- ggplot(ggdf_pred %>% filter(id %in% id_sel)) +
    geom_line(aes(y=fx, x=t, colour='fx'), linetype=2, size=1, stat="identity",alpha=.85) +
    geom_ribbon(aes(ymin=lb,ymax=ub, x=t),alpha=0.2) +
    facet_wrap(~label,ncol=4) + 
-   scale_colour_manual(values=c("firebrick3","grey10","grey40"), 
+   scale_colour_manual(values=c("firebrick3","blue","grey40"), 
                        labels=c('True function value','Estimated function value'),
                        name=' ') +
    scale_fill_manual(values="grey80") +
    guides(colour=FALSE) +
    coord_cartesian(ylim=ylims) +
    labs(x='',
-        y='y = f(x,t)',
-        title = 'tsBART out of sample fit') 
+        y='y = f(t,x)',
+        title = 'tsBART out of sample fit') +
+   geom_line(aes(y = pred_int_lb, x=t), colour='grey70', linetype=6) + 
+   geom_line(aes(y = pred_int_ub, x=t), colour='grey70', linetype=6) +
+   theme_Publication()
 
+p1
 
 #############################################################################################
 ###   2. Vanilla BART.
@@ -157,13 +176,8 @@ lambda = (sighat*sighat*qchi)/nu
 cutpoints = makeCutpoints(xx)
 
 # Fit BART model.
-fit_v = bartRcppClean(y_ = y, x_ = t(xx), # obsvervations must be in *columns*
-                                xpred_ = t(x_pred), #Dpred,#[,-2,drop=F],
-                                xinfo_list = cutpoints,
-                                nburn, nsim, ntree,
-                                lambda, nu, kfac=2,
-                                paste0(getwd(),"/vanilla-bart-trees.txt"), # saves trees - can delete later
-                                RJ=FALSE)
+xcols = c(xcols,which(colnames(train)=='ti'))
+fit_v = bart(x.train=train[xcols], y.train=train$y, x.test=test[xcols],ntree=ntree,ndpost=nsim,nskip=nburn)
 
 #===================================================================
 # Plot vanilla out of sample curves over time.
@@ -175,13 +189,17 @@ ggdf_pred_v = cbind.data.frame(
    'id' = test$id,
    'y' = y_pred,
    'fx' = sim %>% filter(train=='test') %>% select(fx),
-   'pmean' = colMeans(fit_v$postpred),
-   'lb' = apply(fit_v$postpred, 2,function(x) quantile(x,.025)),
-   'ub' = apply(fit_v$postpred, 2,function(x) quantile(x,.975)),
+   'pmean' = fit_v$yhat.test.mean,
+   'lb' = apply(fit_v$yhat.test, 2,function(x) quantile(x,.025)),
+   'ub' = apply(fit_v$yhat.test, 2,function(x) quantile(x,.975)),
    x_pred
 )
 
 ggdf_pred_v$label = paste0('Patient ',ggdf_pred_v$id)
+
+# Add prediction interval.
+ggdf_pred_v$pred_int_lb = ggdf_pred_v$lb - fit_v$sigest
+ggdf_pred_v$pred_int_ub = ggdf_pred_v$ub + fit_v$sigest
 
 
 # Plot out-of-sample fit for each curve over time, for combos of covariates x.
@@ -189,16 +207,19 @@ p2 <- ggplot(ggdf_pred_v %>% filter(id %in% id_sel)) +
    geom_line(aes(y = pmean, x = t, colour='pmean'), linetype=1, size=1, stat="identity") +
    geom_line(aes(y=fx, x=t, colour='fx'), linetype=2, size=1, stat="identity") +
    geom_ribbon(aes(ymin=lb,ymax=ub, x=t),alpha=0.2) +
-   scale_colour_manual(values=c("firebrick3","grey10","grey40"), 
+   scale_colour_manual(values=c("firebrick3","blue","grey40"), 
                        labels=c('True function value','Estimated function value'),
                        name=' ') +
    scale_fill_manual(values="grey80") +
    facet_wrap(~label, ncol=4) +
    coord_cartesian(ylim=ylims) +
    labs(x='Time (t)',
-        y='y = f(x,t)',
+        y='y = f(t,x)',
         title = 'BART out of sample fit') +
-   guides(colour=FALSE)
+   guides(colour=FALSE) +
+   geom_line(aes(y = pred_int_lb, x=t), colour='grey70', linetype=6) + 
+   geom_line(aes(y = pred_int_ub, x=t), colour='grey70', linetype=6) +
+   theme_Publication()
 
 p2
 
@@ -230,12 +251,14 @@ vb_meanll = round(mean(ll_oos_v),2)
 llplt = ggplot(lldf_t, aes(x=ll, fill=model)) + 
    geom_density(alpha=.6,na.rm=T) +
    scale_fill_manual(values = c('grey10','grey60'), 
-                     labels=c(paste0('tsBART (',tsb_meanll,')'), paste0('BART (',vb_meanll,')')), 
+                     #labels=c(paste0('tsBART (',tsb_meanll,')'), paste0('BART (',vb_meanll,')')), 
+                     labels=c(paste0('tsBART'), paste0('BART')), 
                      name=' ') +
-   labs(x = 'Log likelihood', y = 'Density') +
+   labs(x = 'Log Loss', y = 'Density') +
    theme(strip.text.x = element_text(size = 13, colour = "black", angle = 0)) +
    theme(legend.position='top') +
-   scale_x_continuous(expand=c(0,0))
+   scale_x_continuous(expand=c(0,0)) +
+   theme_Publication()
 
 
 ################################################################
@@ -250,7 +273,7 @@ panel = grid.arrange(grobs = list(p1,p2,llplt),
              layout_matrix = lay, widths=c(2,1))
 
 # Save plot.
-ggsave(paste0(out.fig,"figure-03.pdf"), 
+ggsave(paste0(out.fig,"figure-02.pdf"), 
        plot(panel), height=6, width=12, dpi=300)
 
 

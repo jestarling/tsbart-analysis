@@ -9,6 +9,7 @@ library(ggplot2)
 library(gridExtra)
 
 source('./code/helper-functions/ggtheme-publication.R')
+theme_set(theme_bw(base_size=16, base_family='Helvetica'))
 
 ##########################################################
 # Function definitions.
@@ -92,4 +93,4 @@ plt = ggplot(df, aes(x=t, y=haz, colour=factor(id))) +
    theme_Publication() + 
    labs(x='t', y='Hazard function')
 plt
-ggsave('./output-figures/figure-02.pdf', plt, height=4, width=12, dpi=300)   
+ggsave('./output-figures/figure-03.pdf', plt, height=4, width=12, dpi=300)   
