@@ -11,11 +11,8 @@ library(RcppArmadillo)
 # User Inputs
 #===================================================================
 
-# tsbart filepath. Example is:
-tsbart_path = getwd()
-
 # Simulation name to execute.  
-filename = "/data/supp-simulations/tsb-sumofcosines-simdata-T8-p4-n100.csv"  
+filename = "./data/supp-simulations/tsb-sumofcosines-simdata-T8-p4-n100.csv"  
 
 #===================================================================
 # Workspace prep
@@ -38,7 +35,7 @@ source('./code/helper-functions/ggtheme-publication.R')
 theme_set(theme_bw(base_size=16, base_family='Helvetica'))
 
 # Output directories.
-out.fig = paste0(getwd(),'/output-figures/')
+out.fig = paste0(getwd(),'./output-figures/')
 
 
 ##################################################################################

@@ -68,7 +68,7 @@ theme_set(theme_bw(base_size=16, base_family='Helvetica'))
 # 1. Test/train data from case-control sampled obstetrics dataset.
 
 # Read csv file and expand data frame for correct conditional probabilities.
-data = as.data.frame(fread(paste0(getwd(),'/data/perinatal-mortality/stillbirth-data-casecontrol-50-for-paper.csv')))
+data = as.data.frame(fread(paste0(getwd(),'./data/perinatal-mortality/stillbirth-data-casecontrol-50-for-paper.csv')))
 
 # Drop the testtrain column already constructed.  we will draw new test/train splits for each cv fold.
 data = tsbart::survPrep(data, 'gest_age34', 'fd'); data$gest_age = data$gest_age34+33
@@ -86,7 +86,7 @@ train = temp$train; train$testtrain = 'train'
 
 #-------------------------------------------------------------------
 # 3. Read in new patient panel.
-newpts = read.csv(paste0(getwd(), '/data/perinatal-mortality/perinatal-ptpanel.csv'),stringsAsFactors=F)
+newpts = read.csv(paste0(getwd(), './data/perinatal-mortality/perinatal-ptpanel.csv'),stringsAsFactors=F)
 newpts$id = newpts$id + 5000000  #Panel IDs start at 5000001.
 ptpanel = tsbart::makePredGrid(newpts, 'gest_age34', sort(unique(data$gest_age34)))
 

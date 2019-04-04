@@ -42,7 +42,7 @@ source('./code/helper-functions/ggtheme-publication.R')
 # 1. Test/train data from case-control sampled obstetrics dataset.
 
 # Read csv file and expand data frame for correct conditional probabilities.
-data = as.data.frame(fread(paste0(getwd(),'/data/perinatal-mortality/stillbirth-data-casecontrol-50-for-paper.csv')))
+data = as.data.frame(fread(paste0(getwd(),'./data/perinatal-mortality/stillbirth-data-casecontrol-50-for-paper.csv')))
 data = upsample(data, n=1000, sb_pct = .5)
 data = tsbart::survPrep(data, 'gest_age34', 'fd'); data$gest_age = data$gest_age34+33
 

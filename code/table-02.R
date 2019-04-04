@@ -1,13 +1,6 @@
 # Creates data used in Table 1's simulation study.
 
 #===================================================================
-# User inputs.
-#===================================================================
-
-# fastbart filepath. Example is:
-fastbart_path = './fastbart'
-
-#===================================================================
 # Workspace prep.
 #===================================================================
 
@@ -17,13 +10,13 @@ library(devtools)
 install_github('jestarling/tsbart')
 library(tsbart)
 
-source(paste0(getwd(), '/code/helper-functions/create-table4.R'))
+source(paste0(getwd(), './code/helper-functions/create-table2.R'))
 
 #===================================================================
 # Read all file names.
 #===================================================================
 
-files <- list.files(paste0(getwd(), "/data/supp-simulations-table-04/"))
+files <- list.files(paste0(getwd(), "./data/supp-simulations-table-04/"))
 
 # Define function to compare each dataset's model fits.
 tsbartCompare = function(filepath, filename, probit=FALSE, out.csv){
@@ -65,7 +58,6 @@ tsbartCompare = function(filepath, filename, probit=FALSE, out.csv){
    ###   1. Vanilla BART.
    #############################################################################################
    
-   # Install fastbart package from local directory.
    library(dbarts)
    
    # Calibrate BART's error variance a la CGM 2010 (method 2)
@@ -86,14 +78,6 @@ tsbartCompare = function(filepath, filename, probit=FALSE, out.csv){
    
    # Fit vanilla BART model.
    m = 200; burn = 200; nd = 1000
-   # fit_v = bartRcppClean(y_ = y, x_ = t(cbind.data.frame(xx,ti)), # obsvervations must be in *columns*
-   #                       xpred_ = t(cbind.data.frame(x_pred,'ti' = ti_pred)), #Dpred,#[,-2,drop=F],
-   #                       xinfo_list = cutpoints,
-   #                       burn, nd, m,
-   #                       lambda, nu, kfac=2,
-   #                       paste0(getwd(),"/trees.txt"),
-   #                       RJ=FALSE)
-   
    xcols = c(xcols,which(colnames(train)=='ti'))
    fit_v = bart(x.train=train[xcols], y.train=train$y, x.test=test[xcols],ntree=ntree,ndpost=nsim,nskip=nburn)
    
@@ -320,14 +304,14 @@ tsbartCompare = function(filepath, filename, probit=FALSE, out.csv){
 # source is location of csv files.  
 # out.csv is location to output result files, which are used to assemble table.
 source = paste0(getwd(), "/data/supp-simulations-table-04/")
-out.csv = paste0(getwd(),"/data/supp-simulations-table-04/results/")
+out.csv = paste0(getwd(),"/data/supp-simulations-table-04/")
 
 # Iterate through files and generate comparisons.
 counter = 0
 
 for(f in files){
-   
-   run = funbartCompare(filepath=source, filename=f, probit=FALSE, out.csv)
+
+   run = tsbartCompare(filepath=source, filename=f, probit=FALSE, out.csv)
    
    counter = counter + 1
    print(paste0('SIMULATION ',counter,' of ',length(files),' completed.'))
@@ -424,7 +408,5 @@ table = table[order,]
 p = rep(c(4,8,20),each=4)
 n = rep(c(100,500,1000,2500),times=3)
 table = cbind.data.frame(p,n,table)
-
-
 
 fwrite(table,"./output-files/table-02.csv")

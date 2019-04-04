@@ -25,7 +25,7 @@ out.fig = paste0(getwd(), '/output-figures')
 out.csv = paste0(getwd(), '/output-files/')
 
 # Load my custom functions.
-source(paste0(getwd(),'/code/helper-functions/create-table1.R'))
+source(paste0(getwd(),'./code/helper-functions/create-table1.R'))
 
 ###########################################################################
 # MISSING DATA AND NUMBERS OF RECORDS
@@ -44,7 +44,7 @@ nraw - nclean
 # TABLE 1
 ###########################################################################
 
-df = as.data.frame(fread(paste0(getwd(),'/data/perinatal-mortality/stillbirth-data-example.csv')))
+df = as.data.frame(fread(paste0(getwd(),'./data/perinatal-mortality/stillbirth-data-example.csv')))
 colvar = 'hirisk'
 
 table1 = cohortchars(df,colvar)
