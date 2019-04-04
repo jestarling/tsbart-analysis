@@ -8,12 +8,12 @@ rm(list=ls())
 ntree=200; nburn=1000; nsim=10000  
 
 #-------------------------------------------------------------------------
-# Install tsbart and fastbart packages.
+# Workspace setup.
 #-------------------------------------------------------------------------
 
 library(devtools)    # For installing packages via github.
 library(tsbart)
-library(fastbart)
+library(dbarts)
 library(splines)
 
 # Load other libraries.
@@ -25,9 +25,9 @@ library(viridis)
 library(ggthemes)
 
 # ggplot settings
-theme_set(theme_bw(base_size=13, base_family='Helvetica'))
+theme_set(theme_bw(base_size=16, base_family='Helvetica'))
 
-# Load my custom functions.
+# Load helper functions.
 source('./code/helper-functions/stillbirth-functions-modelfitutils.R')
 source('./code/helper-functions/stillbirth-functions-cvutils.R')
 source('./code/helper-functions/stillbirth-functions-testtrain-split.R')

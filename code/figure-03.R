@@ -87,10 +87,10 @@ df$t = rep(rep(t_grid, each=n), times=3)
 df$haz = c(unlist(test1), unlist(test2), unlist(test3))
 
 plt = ggplot(df, aes(x=t, y=haz, colour=factor(id))) + 
-   geom_line(alpha=.5, size=.5) + 
+   geom_line(size=.5) + 
    facet_wrap(~label,ncol=3) + 
-   scale_colour_manual(values=rep('grey30',100), guide=F) + 
+   scale_colour_manual(values=rep('black',100), guide=F) + 
    theme_Publication() + 
    labs(x='t', y='Hazard function')
 plt
-ggsave('./output-figures/figure-03.pdf', plt, height=4, width=12, dpi=300)   
+ggsave('./output-figures/figure-03.pdf', plt, height=3, width=9, dpi=300)   

@@ -15,12 +15,7 @@ ntree=200; nburn=500; nsim=5000
 library(devtools)
 install_github("jestarling/tsbart")
 library(tsbart)
-
-# Install and load fastbart package. For comparison with vanilla BART.
-#install.packages('./fastbart', type='source', repos=NULL)
-library(fastbart)
-
-library(devtools)    # For installing packages via github.
+library(dbarts)
 library(splines)
 library(data.table)  # For fast csv read/write.
 library(tidyverse)   # For tidy data/plotting.

@@ -11,12 +11,12 @@ kreps=5
 ntree=200; nburn=1000; nsim=10000  
 
 #-------------------------------------------------------------------------
-# Install tsbart and fastbart packages.
+# Workspace setup.
 #-------------------------------------------------------------------------
 
 library(devtools)    # For installing packages via github.
 library(tsbart)
-library(fastbart)
+library(dbarts)
 library(splines)
 
 # Load other libraries.
@@ -28,7 +28,7 @@ library(viridis)
 library(ggthemes)
 
 # ggplot settings
-theme_set(theme_bw(base_size=13, base_family='Helvetica'))
+theme_set(theme_bw(base_size=16, base_family='Helvetica'))
 
 # Load my custom functions.
 source('./code/helper-functions/stillbirth-functions-modelfitutils.R')
@@ -126,17 +126,36 @@ write.csv(tbl_4, './output-files/table-04.csv', row.names=F)
 # Save and plot results.
 #--------------------------------------------------------------------------
 
+### -----------
+# Using saved file.
+binll_oos = read.csv('./output-files/binll_oos_upsampled_binll-by-week.csv')
+colnames(binll_oos)[-1] = 34:42
+binll_oos = binll_oos %>% gather('gest_age','logl','34':'42')
+binll_oos$gest_age = as.numeric(binll_oos$gest_age)
+binll_oos$gest_age34 = binll_oos$gest_age - 33
+### -----------
+
 binll_rel = binll_oos %>% filter(gest_age34 !='all')
 binll_rel$bll_relto_tsb = NA
+
+binll_rel$labels = ifelse(binll_rel$method=="pensp", "P-splines",
+                          ifelse(binll_rel$method=="sp1", "Splines 1",
+                                 ifelse(binll_rel$method=="sp2", "Splines 2",
+                                        ifelse(binll_rel$method=="tsb", "tsBART (tuned)",
+                                               ifelse(binll_rel$method=="tsb_default", "tsBART (default)",
+                                                      "BART")))))
 
 for(m in unique(binll_rel$method)){
    binll_rel$bll_relto_tsb[which(binll_rel$method==m)] = binll_rel$logl[which(binll_rel$method==m)] / binll_rel$logl[which(binll_rel$method=='tsb')]
 }
 
-ll_plt = ggplot(binll_rel, aes(x=gest_age, y=bll_relto_tsb, colour=method)) + 
+ll_plt = ggplot(binll_rel, aes(x=gest_age, y=bll_relto_tsb, colour=labels, linetype=labels)) + 
    geom_line(size=.75) + 
-   labs(x='Gestational age (Wks)', y='Out of sample logl relative to tsBART') +
-   scale_colour_Publication()+ theme_Publication()
+   labs(x='Gestational age (Wks)', y='Out of sample relative log-loss') +
+   scale_colour_colorblind(name="") + scale_linetype_manual(name='', values=c(6,5,3,2,4,1)) + theme_Publication() +
+   theme(legend.key.size=unit(.75,"cm"))
+
+ll_plt
 
 ggsave('./output-figures/figure-04.pdf', ll_plt,
-      width=8, height=8, units='in', dpi=300, limitsize=TRUE)
+      width=5, height=5, units='in', dpi=300, limitsize=TRUE)

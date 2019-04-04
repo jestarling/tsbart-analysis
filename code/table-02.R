@@ -1,5 +1,4 @@
 # Creates data used in Table 1's simulation study.
-# Requires fastbart; available from Jared S. Murray on request.
 
 #===================================================================
 # User inputs.
@@ -16,7 +15,7 @@ library(data.table) # For fast csv read.
 library(tidyverse)
 library(devtools)
 install_github('jestarling/tsbart')
-library(funbart, fastbart)
+library(tsbart)
 
 source(paste0(getwd(), '/code/helper-functions/create-table4.R'))
 
@@ -32,7 +31,7 @@ tsbartCompare = function(filepath, filename, probit=FALSE, out.csv){
    require(tidyverse)
    require(data.table)
    require(tsbart)
-   require(fastbart)
+   require(dbarts)
    
    # Check that csv.out exists before proceeding, if it does not already.
    dir.create(out.csv)
@@ -67,7 +66,7 @@ tsbartCompare = function(filepath, filename, probit=FALSE, out.csv){
    #############################################################################################
    
    # Install fastbart package from local directory.
-   library(fastbart)
+   library(dbarts)
    
    # Calibrate BART's error variance a la CGM 2010 (method 2)
    df = data.frame(xx, ti, y)
@@ -87,24 +86,27 @@ tsbartCompare = function(filepath, filename, probit=FALSE, out.csv){
    
    # Fit vanilla BART model.
    m = 200; burn = 200; nd = 1000
-   fit_v = bartRcppClean(y_ = y, x_ = t(cbind.data.frame(xx,ti)), # obsvervations must be in *columns*
-                         xpred_ = t(cbind.data.frame(x_pred,'ti' = ti_pred)), #Dpred,#[,-2,drop=F],
-                         xinfo_list = cutpoints,
-                         burn, nd, m,
-                         lambda, nu, kfac=2,
-                         paste0(getwd(),"/trees.txt"),
-                         RJ=FALSE)
+   # fit_v = bartRcppClean(y_ = y, x_ = t(cbind.data.frame(xx,ti)), # obsvervations must be in *columns*
+   #                       xpred_ = t(cbind.data.frame(x_pred,'ti' = ti_pred)), #Dpred,#[,-2,drop=F],
+   #                       xinfo_list = cutpoints,
+   #                       burn, nd, m,
+   #                       lambda, nu, kfac=2,
+   #                       paste0(getwd(),"/trees.txt"),
+   #                       RJ=FALSE)
+   
+   xcols = c(xcols,which(colnames(train)=='ti'))
+   fit_v = bart(x.train=train[xcols], y.train=train$y, x.test=test[xcols],ntree=ntree,ndpost=nsim,nskip=nburn)
    
    print('Vanilla BART completed.')
    
    #############################################################################################
-   ###   1. Functional BART.
+   ###   1. tsBART.
    #############################################################################################
    
-   # Remove funbart package.
-   detach("package:fastbart", unload=TRUE)
+   # Remove tsBART package.
+   detach("package:tsbart", unload=TRUE)
    
-   # Install and load funbart package.
+   # Install and load tsBART package.
    library(tsbart)
    
    #===================================================================
@@ -210,7 +212,7 @@ tsbartCompare = function(filepath, filename, probit=FALSE, out.csv){
    
    # Vanilla BART
    check_is_v = checkFit(y=y, 
-                         mcmcdraws = fit_v$postfit,
+                         mcmcdraws = fit_v$yhat.train,
                          sig = fit_v$sigma,
                          probit,
                          doWaic=TRUE,
@@ -230,7 +232,7 @@ tsbartCompare = function(filepath, filename, probit=FALSE, out.csv){
    
    # Vanilla BART
    check_oos_v = checkFit(y = y_pred,
-                          mcmcdraws = fit_v$postpred,
+                          mcmcdraws = fit_v$yhat.test,
                           sig = fit$sigma,
                           probit,
                           doWaic=TRUE,
@@ -298,7 +300,7 @@ tsbartCompare = function(filepath, filename, probit=FALSE, out.csv){
    # Combine test and train output file
    out = rbind(df_tr, df_te)
    
-   # Remove funbart package.
+   # Remove tsBART package.
    detach("package:tsbart", unload=TRUE)
    
    #===================================================================
@@ -351,7 +353,7 @@ scenarios = unique(gsub( "-rep.*$", "", files))
 #===================================================================
 
 table = as.data.frame(matrix(NA,nrow=0,ncol=5))
-colnames(table) = c('in-sample BART', 'in-sample funBART','out-of-sample BART', 'out-of-sample funBART','p-value')
+colnames(table) = c('in-sample BART', 'in-sample tsBART','out-of-sample BART', 'out-of-sample tsBART','p-value')
 
 # Loop through scenarios.
 for(i in 1:length(scenarios)){

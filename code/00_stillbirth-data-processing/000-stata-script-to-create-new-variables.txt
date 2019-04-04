@@ -1,0 +1,122 @@
+# delimit ;
+set more off;
+
+use "DATA-SET-PATH.dta";
+
+
+gen fd = fetal_death_yr!=. & gestation_detail>0 & gestation_detail<43;
+replace fd = . if gestation_detail<2 | gestation_detail>42;
+
+tabstat gestation_detail, by (fd) stat( n min max) missing;
+tab gestation_detail if fd==0, missing;
+tab gestation_detail if fd==1, missing;
+tab fd;
+
+
+gen abortion = 1 if fd==1 & gestation_detail<20 & gestation_detail!=.;
+replace abortion = 0 if abortion !=1 & fd!=. & gestation_detail!=.;
+
+tab abortion;
+tabstat gestation_detail, by (abortion) stat( n min max) missing;
+tab gestation_detail if abortion==0, missing;
+tab gestation_detail if abortion==1, missing;
+tab abortion fd;
+
+
+
+gen stillbirth = 1 if fd==1 & gestation_detail>=20 & gestation_detail!=.;
+replace stillbirth = 0 if stillbirth !=1 & fd!=. & gestation_detail!=.;
+
+tab stillbirth;
+tabstat gestation_detail, by (stillbirth) stat( n min max) missing;
+tab gestation_detail if stillbirth==0, missing;
+tab gestation_detail if stillbirth==1, missing;
+tab gestation_detail if stillbirth==., missing;
+
+tab stillbirth fd;
+tab stillbirth abortion, missing;
+
+
+
+gen livebirth = 1 if fd==0 & gestation_detail!=.;
+replace livebirth = 0 if livebirth !=1 & fd!=. & gestation_detail!=.;
+
+tab livebirth;
+tabstat gestation_detail, by (livebirth) stat( n min max) missing;
+tab gestation_detail if livebirth==0, missing;
+tab gestation_detail if livebirth==1, missing;
+tab gestation_detail if livebirth==., missing;
+tab livebirth fd;
+tab stillbirth livebirth, missing;
+tab abortion livebirth, missing;
+
+
+gen ab_sb_lb = 1 if abortion ==1;
+replace ab_sb_lb = 2 if stillbirth==1;
+replace ab_sb_lb =3 if livebirth==1;
+
+tab ab_sb_lb, missing;
+tab ab_sb_lb abortion, missing;
+tab ab_sb_lb stillbirth, missing;
+tab ab_sb_lb livebirth, missing;
+tab ab_sb_lb;
+
+gen infant_death = 1 if death_age_days!=. & livebirth==1;
+replace infant_death = 0 if infant_death!=1 & livebirth==1;
+
+tab infant_death;
+tab infant_death, missing;
+tabstat death_age_days, by (infant_death) stat( n min max) missing;
+tab death_age_days if infant_death==0, missing;
+tab death_age_days if infant_death==1, missing;
+tab death_age_days if infant_death==., missing;
+tab livebirth infant_death, missing;
+tab ab_sb_lb infant_death, missing;
+
+
+gen ab_sb_lb_id = 1 if abortion ==1;
+replace ab_sb_lb_id = 2 if stillbirth==1;
+replace ab_sb_lb_id =3 if livebirth==1 & infant_death==0;
+replace ab_sb_lb_id =4 if livebirth==1 & infant_death==1;
+
+tab ab_sb_lb_id, missing;
+tab ab_sb_lb_id abortion, missing;
+tab ab_sb_lb_id stillbirth, missing;
+tab ab_sb_lb_id livebirth, missing;
+tab ab_sb_lb_id infant_death, missing;
+tab ab_sb_lb_id;
+
+gen neon_death = 1 if infant_death==1 & death_age_days<=28 & death_age_days!=.;
+replace neon_death = 0 if infant_death==1 & death_age_days>28 & death_age_days!=.;
+replace neon_death = 0 if infant_death==0;
+
+tab infant_death, missing;
+tab neon_death, missing;
+tab neon_death infant_death, missing;
+
+gen infant_late_death = infant_death;
+replace infant_late_death = 0 if neon_death==1;
+
+tab infant_late_death, missing;
+tab neon_death infant_late_death, missing;
+
+
+gen ab_sb_lb_nd_id = 1 if abortion ==1;
+replace ab_sb_lb_nd_id = 2 if stillbirth==1;
+replace ab_sb_lb_nd_id =3 if livebirth==1 & infant_death==0;
+replace ab_sb_lb_nd_id =4 if neon_death==1;
+replace ab_sb_lb_nd_id =5 if infant_late_death==1;
+
+tab ab_sb_lb_nd_id, missing;
+tab ab_sb_lb_nd_id abortion, missing;
+tab ab_sb_lb_nd_id stillbirth, missing;
+tab ab_sb_lb_nd_id livebirth, missing;
+tab ab_sb_lb_nd_id neon_death, missing;
+tab ab_sb_lb_nd_id infant_late_death, missing;
+
+gen pnm = 1 if stillbirth==1 | neon_death==1;
+replace pnm = 0 if pnm !=1 & gestation_detail>0 & gestation_detail<43;
+
+tab pnm, missing;
+tab pnm stillbirth, missing;
+tab pnm neon_death, missing;

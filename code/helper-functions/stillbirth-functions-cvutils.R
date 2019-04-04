@@ -3,7 +3,7 @@
 # Extract oos fit data for patient panel.
 ########################################################################
 
-extractFits = function(test, cv_tsb, cv_vb, cv_sp1, cv_sp2, cv_pensp, cv_tsb_default = NULL, adjust=F){
+extractFits = function(test, cv_tsb, cv_vb, cv_sp1, cv_sp2, cv_pensp, rf, cv_tsb_default = NULL, adjust=F){
    
    #=======================================================================
    # Set parameters for adjusting the predicted oos probabilities.
@@ -59,6 +59,11 @@ extractFits = function(test, cv_tsb, cv_vb, cv_sp1, cv_sp2, cv_pensp, cv_tsb_def
    test$phat_oos_pensp_ub = cv_pensp$phat_oos_ub / padjust * rescale
    test$phat_oos_pensp_binll = cv_pensp$binll_oos
    
+   # rf
+   test$phat_oos_rf = cv_rf$phat_oos / padjust * rescale
+   test$phat_oos_rf_lb = test$phat_oos_rf - 1.96 * cv_rf$phat_oos_se
+   test$phat_oos_rf_ub = test$phat_oos_rf + 1.96 * cv_rf$phat_oos_se
+   test$phat_oos_rf_binll = cv_rf$binll_oos
    
    #=======================================================================
    # Add labels and return panel.

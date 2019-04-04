@@ -135,7 +135,7 @@ bart_fit_util = function(train, test, xcols, yvar='fd', tvar='gest_age34', ntree
                          init_upper=1.96, init_lower=-1.96){   
    
    # Note: xcols should include the time variable here.
-   require(fastbart)
+   require(dbarts)
    
    #===================================================================
    # Extract data for model inputs.
@@ -188,18 +188,20 @@ bart_fit_util = function(train, test, xcols, yvar='fd', tvar='gest_age34', ntree
    #-------------------------------------------------------------------
    # Fit BART model.
    #-------------------------------------------------------------------
-   fit = fastbart::bartRcppClean(y_ = y, x_ = t(xx), # obsvervations must be in *columns*
-                                 xpred_ = t(xpred), 
-                                 xinfo_list = cutpoints,
-                                 nburn, nsim, ntree,
-                                 lambda, nu, kfac=2,
-                                 paste0(getwd(),"/vanillabarttrees.txt"),
-                                 RJ=FALSE)
+   # fit = fastbart::bartRcppClean(y_ = y, x_ = t(xx), # obsvervations must be in *columns*
+   #                               xpred_ = t(xpred), 
+   #                               xinfo_list = cutpoints,
+   #                               nburn, nsim, ntree,
+   #                               lambda, nu, kfac=2,
+   #                               paste0(getwd(),"/vanillabarttrees.txt"),
+   #                               RJ=FALSE)
+   
+   fit = bart(x.train=train[xcols], y.train=train$fd, x.test=test[xcols],ntree=ntree,ndpost=nsim,nskip=nburn, binaryOffset=offset)
    
    #-------------------------------------------------------------------
    # Calculate fit info.
    #-------------------------------------------------------------------
-   phat_mcmc_oos = pnorm(fit$postpred)
+   phat_mcmc_oos = pnorm(fit$yhat.test)
    
    phat_oos = apply(phat_mcmc_oos, 2, mean)
    phat_oos_lb =  apply(phat_mcmc_oos, 2, function(x) quantile(x, 0.025))
@@ -487,6 +489,115 @@ penspline_fit_util_sim = function(train, test){
 }
 
 
+
+########################################################################
+# Penalized spline fit utility.
+########################################################################
+penspline_fit_util = function(train, test){
+   
+   #-------------------------------------------------------------------
+   # Response, latent response, and time points.
+   #-------------------------------------------------------------------
+   yobs = train$fd
+   yobs_pred = test$fd
+   
+   #-----------------------------------------------------------------------
+   # First, collapse data for optimal computing speed.
+   #-----------------------------------------------------------------------
+   
+   # Columns to collapse on.
+   coll = c('induce','diabetes','htn','otherRisk','momAge','momEthnicity','birthwtQ','wtgainQ','gest_age34','multiparous','male')
+   
+   # Collapse train set
+   trainc = train[c('fd',coll)] %>%
+      group_by(induce, diabetes, htn, otherRisk, momAge, momEthnicity, birthwtQ, wtgainQ, gest_age34, multiparous, male) %>%
+      summarize(fd_yes = sum(fd==1), fd_total = length(fd), n = n())
+   
+   trainc$hr = ifelse(trainc$diabetes==0 & trainc$htn==0 &  trainc$otherRisk==0, 0, 1)
+   
+   #-----------------------------------------------------------------------
+   # Fit spline model.
+   #-----------------------------------------------------------------------
+   
+   require(mgcv)
+   
+   # These are cubic p-splines, with 9 basis elements, with a second-order penalty.
+   # See: https://stat.ethz.ch/R-manual/R-devel/library/mgcv/html/smooth.terms.html
+   fitmod = gam(cbind(fd_yes, fd_total) ~ s(gest_age34, bs='ps', m=c(2,2)) +
+                   diabetes + htn +
+                   otherRisk + momAge + momEthnicity +
+                   multiparous + male + wtgainQ + birthwtQ,
+                data = trainc, family='binomial')
+   
+   # Predict on training set.
+   predict_is = predict(fitmod, newdata=train, type='response', se=T)
+   phat_is = as.vector(as.numeric(predict_is$fit)) 
+   se_is = as.vector(as.numeric(predict_is$se.fit))
+   
+   # Predict on test set.
+   predict_oos = predict(fitmod, newdata=test, type='response', se=T)
+   phat_oos = as.vector(as.numeric(predict_oos$fit))
+   se_oos = as.vector(as.numeric(predict_oos$se.fit))  
+   
+   fit = list('phat_is' = phat_is, 'se_is' = se_is, 'phat_oos' = phat_oos, 'se_oos' = se_oos)
+   
+   #-------------------------------------------------------------------
+   # Calculate fit info.
+   #-------------------------------------------------------------------
+   # Use test info only; don't include the patient panel obs.  This uses a global variable in dataset, testtrain.
+   binll_oos = binloglik(yobs_pred, phat_oos)
+   
+   return(list('fit' = fit,
+               'phat_oos' = phat_oos,
+               'phat_oos_lb' = phat_oos - 1.96 * se_oos,
+               'phat_oos_ub' = phat_oos + 1.96 * se_oos,
+               'binll_oos' = binll_oos))
+}
+
+
+
+########################################################################
+# Random Forest fit utility.
+########################################################################
+
+rf_fit_util = function(train, test){
+   
+   require(ranger)
+   
+   #-------------------------------------------------------------------
+   # Fit model to train data.set
+   #-------------------------------------------------------------------
+   rf_is = ranger(formula = factor(fd) ~ gest_age34 + diabetes + htn + otherRisk + momAge + momEthnicity +
+                     multiparous + induce + male + wtgainQ + birthwtQ, data=train, 
+                     keep.inbag=T, oob.error=F, probability=T)
+   
+   # rf_is_pred = predict(rf_is, data=train, type='se')
+   # phat_is = rf_is_pred$predictions
+   # se_is = rf_is_pred$se
+   
+   #-----------------------------------------------------------------------
+   # Predict on test set.
+   #-----------------------------------------------------------------------
+   test$fd = factor(test$fd)
+   rf_oos_pred = predict(rf_is, data=test, type='se', probability=T)
+   
+   phat_oos = rf_oos_pred$predictions[,2]
+   se_oos = rf_oos_pred$se[,2]
+   
+   #-------------------------------------------------------------------
+   # Calculate fit info.
+   #-------------------------------------------------------------------
+   # Use test info only; don't include the patient panel obs.  This uses a global variable in dataset, testtrain.
+   yobs_pred = as.numeric(test$fd)
+   binll_oos = binloglik(yobs_pred, phat_oos)
+   
+   return(list('fit' = rf_is,
+               'phat_oos' = phat_oos,
+               'phat_oos_lb' = phat_oos - 1.96 * se_oos,
+               'phat_oos_ub' = phat_oos + 1.96 * se_oos,
+               'phat_oos_se' = se_oos,
+               'binll_oos' = binll_oos))
+}
 
 
 

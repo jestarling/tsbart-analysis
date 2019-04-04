@@ -7,7 +7,7 @@
 binloglik = function(yobs, probs){
    
    # Catch probs too close to 0.
-   probs[which(probs<0.00000001)] = 0.00000001
+   probs[which(probs<0.000001)] = 0.000001
    
    # Calculate contribution for each obs.
    #ll = yobs * probs + (1-yobs) * (1-probs)

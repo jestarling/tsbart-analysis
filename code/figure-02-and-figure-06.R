@@ -6,12 +6,6 @@ rm(list=ls())
 
 library(Rcpp)
 library(RcppArmadillo)
-library(dbarts)
-# source("/Users/jennstarling/Stats/research/tsbart/R/tsbart.R")
-# source("/Users/jennstarling/Stats/research/tsbart/R/tuneEcross.R")
-# source("/Users/jennstarling/Stats/research/tsbart/R/makeCutpoints.R")
-# sourceCpp("/Users/jennstarling/Stats/research/tsbart/src/tsbartFit.cpp")
-# sourceCpp("/Users/jennstarling/Stats/research/tsbart/src/checkFit.cpp")
 
 #===================================================================
 # User Inputs
@@ -30,7 +24,10 @@ filename = "/data/supp-simulations/tsb-sumofcosines-simdata-T8-p4-n100.csv"
 # Install tsbart package from local directory.
 library(devtools)
 install_github("jestarling/tsbart")
+
+# Load other libraries.
 library(tsbart)
+library(dbarts)
 library(mosaic)
 library(tidyverse)
 library(gridExtra)
@@ -57,7 +54,7 @@ exp_cross = NULL
 
 # Read csv file.
 sim = read.csv(paste0(getwd(),'/',filename))
-sim = read.csv("/Users/jennstarling/Stats/research/tsbart-analysis/data/supp-simulations/tsb-sumofcosines-simdata-T8-p4-n100.csv")
+sim = read.csv("./data/supp-simulations/tsb-sumofcosines-simdata-T8-p4-n100.csv")
 
 # Set up train and test data sets.
 train = sim %>% filter(train=='train')
@@ -77,12 +74,11 @@ xx = train[xcols]; x_pred = test[xcols]     # Matrix of predicted covariates.
 #############################################################################################
 
 #=====================================================================
-#=== Evaluate optimal expected number of crossings by selecting
-#=== one with lowest WAIC.
+#=== Evaluate optimal expected number of crossings.
 #=====================================================================
 
-ecross_candidates = seq(.5,5,by=.5)
 # Evaluate optimal number of crossings.
+ecross_candidates = seq(.5,5,by=.5)
 ecrossTune = tuneEcross(ecross_candidates,
                         y=y, tgt=ti, tpred=ti_pred,
                         x=xx, xpred=x_pred, nburn=50, nsim=50, ntree=200)
@@ -105,7 +101,6 @@ fit = tsbart(y=y, tgt=ti, tpred=ti_pred, x=xx, xpred=x_pred,
 
 #===================================================================
 # Plot out of sample curves over time.
-# Note: not included in plot function bc need faceting for x's.
 #===================================================================
 
 # Set up data frames for plotting out of sample curves over time.

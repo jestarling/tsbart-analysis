@@ -316,7 +316,13 @@ $(document).ready(function () {
 <p>The following are instructions for the workflow to replicate the analysis.</p>
 <div id="dataset." class="section level2">
 <h2>Dataset.</h2>
-<p>We do not have license to redistribute the dataset used. The raw data is publicly available via the National Center for Health Statistics. We provide several items to support replication of our process:</p>
+<p>The raw data is publicly available via the National Center for Health Statistics at the following locations:</p>
+<ul>
+<li>2005 data: <a href="ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/DVS/cohortlinkedus/LinkCO05US.zip" class="uri">ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/DVS/cohortlinkedus/LinkCO05US.zip</a><br />
+</li>
+<li>2006 data: <a href="ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/DVS/cohortlinkedus/LinkCO06US.zip" class="uri">ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/DVS/cohortlinkedus/LinkCO06US.zip</a></li>
+</ul>
+<p>We provide several items to support replication of our process:</p>
 <ul>
 <li>A ‘data dictionary’ for our dataset, which includes a link to the original data source and its documentation.
 <ul>
@@ -336,10 +342,10 @@ $(document).ready(function () {
 </div>
 <div id="data-preparation-and-cleaning." class="section level2">
 <h2>Data preparation and cleaning.</h2>
-<p>To use the scripts to run our analysis, the user must download the raw data files, and save in<br />
-a .csv file at <strong>/Data/BIRTH_DEATH_DATA_2004-2006.csv</strong>. The workflow then proceeds as follows.</p>
+<p>To use the scripts to run our analysis, the user must download the raw data files.</p>
 <ol style="list-style-type: decimal">
-<li>Run the script <strong>/code/00_stillbirth-data-processing/00a-stillbirth-process-raw-data.R</strong> to clean the raw data and create variables for stillbirth analysis.</li>
+<li><p>A stata script at <strong>/Data/000-stata-script-to-create-new-variables.txt</strong> processes the data, creating variables used in the analysis. The user must save the output of this script in a .csv file at <strong>/Data/BIRTH_DEATH_DATA_2004-2006.csv</strong>. The workflow then proceeds as follows.</p></li>
+<li><p>Run the script <strong>/code/00_stillbirth-data-processing/00a-stillbirth-process-raw-data.R</strong> to clean the raw data and create variables for stillbirth analysis.</p></li>
 </ol>
 <ul>
 <li>This file takes the input raw dataset <strong>/Data/BIRTH_DEATH_DATA_2004-2006.csv</strong>.
@@ -349,7 +355,7 @@ a .csv file at <strong>/Data/BIRTH_DEATH_DATA_2004-2006.csv</strong>. The workfl
 </ul></li>
 <li>This file outputs the processed dataset <strong>/Data/stillbirth-clean.csv</strong>.</li>
 </ul>
-<ol start="2" style="list-style-type: decimal">
+<ol start="3" style="list-style-type: decimal">
 <li>Run the script <strong>/code/00_stillbirth-data-processing/00b-stillbirth-create-case-control-samples.R</strong> to create the case-control sample of the stillbirth data.</li>
 </ol>
 <ul>
@@ -362,47 +368,49 @@ a .csv file at <strong>/Data/BIRTH_DEATH_DATA_2004-2006.csv</strong>. The workfl
 <h2>Code execution for analysis and simulation.</h2>
 <p>The code for both stillbirth analysis and the simulation can be run by the following command.</p>
 <p><strong>bash tsbart-analysis-coderun.sh</strong></p>
-<p>This script runs several scripts, all located in the <strong>./code</strong> subfolder.</p>
+<p>This script runs several R scripts, all located in the <strong>./code</strong> subfolder. These scripts can also be executed individually.</p>
 <ul>
 <li><strong>table-01.R</strong>
 <ul>
-<li>Generates Table 1 for cohort characteristics.<br />
+<li>Generates Table 1 for cohort characteristics.</li>
+</ul></li>
+<li><strong>table-02.R</strong>
+<ul>
+<li>Repeats second simulation on 100 datasets to calculate log-likelihood.</li>
+<li>Creates Table 2.<br />
 </li>
 </ul></li>
-<li><strong>figure-02.R</strong>
+<li><strong>figure-02-and-figure06.R</strong>
+<ul>
+<li>Creates Figure 2 and Figure 6 (in Appendix A1).</li>
+<li>Figure 2 illustrates results of the second simulation, comparing tsBART and BART.</li>
+<li>Figure 6 is example of tuning expected number of crossings.<br />
+</li>
+</ul></li>
+<li><strong>table-03-a_generate-data.R</strong><br />
+</li>
+<li><strong>table-03-b_one-example-run.R</strong>
+<ul>
+<li>These two scripts illustrate how data sets for the first simulation are generated and fit.<br />
+</li>
+<li>This code does not replicate Table 3; Table 3 is the result of repeating this process on 500 datasets for each weighting scenario to calculate MSE and point-wise coverage for each method and weighting scenario combination.<br />
+</li>
+</ul></li>
+<li><strong>figure-03.R</strong>
 <ul>
 <li>Illustrates hazard data generated for first simulation, comparing coverage across methods.<br />
 </li>
 </ul></li>
-<li><strong>table-02-a_generate-data.R</strong><br />
-</li>
-<li><strong>table-02-b_one-example-run.R</strong>
-<ul>
-<li>These two scripts illustrate how data sets for the first simulation are generated and fit.<br />
-</li>
-<li>This code does not replicate Table 2; Table 2 is the result of repeating this process on 500 datasets for each weighting scenario to calculate MSE and point-wise coverage for each method and weighting scenario combination.<br />
-</li>
-</ul></li>
-<li><strong>table-03.R</strong>
-<ul>
-<li>Repeats second simulation on 100 datasets to calculate log-likelihood.</li>
-<li>Creates Table 3.</li>
-</ul></li>
-<li><strong>figure-03-and-figure06.R</strong>
-<ul>
-<li>Creates Figure 3 and Figure 6 (in Appendix A1).</li>
-<li>Figure 3 illustrates results of the second simulation, comparing tsBART and BART.</li>
-<li>Figure 6 is example of tuning expected number of crossings.</li>
-</ul></li>
-<li><strong>figure-04.R</strong>
-<ul>
-<li>Fits models to stillbirth data.</li>
-<li>Creates Figure 4 to show estimated stillbirth risk curves for each method.</li>
-</ul></li>
-<li><strong>figure-05-and-table-04.R</strong>
+<li><strong>figure-04-and-table-04.R</strong>
 <ul>
 <li>Fits models to up-sampled stillbirth data.</li>
-<li>Creates Figure 5 and Table 4.</li>
+<li>Creates Figure 4 and Table 4.</li>
+<li>The file ending in “-single-iteration.R” illustrates the fit for a single dataset instead of all five runs.</li>
+</ul></li>
+<li><strong>figure-05.R</strong>
+<ul>
+<li>Fits models to stillbirth data.</li>
+<li>Creates Figure 5 to show estimated stillbirth risk curves for each method.</li>
 </ul></li>
 </ul>
 </div>

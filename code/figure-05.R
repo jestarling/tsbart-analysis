@@ -5,7 +5,6 @@
 ##    1. tsbART
 ##    2. vanilla BART (using sparapani method for correct conditional probabilities)
 ##    3. conditional logistic regression with splines (preliminary analysis)
-##    4. treed gaussian processes (TGP), with only time included in trees
 #
 ##  The script does the following:
 ##    1. Fits each model to the training dataset.
@@ -23,8 +22,8 @@
 rm(list=ls())
 
 # Set trees/burns/draws for tsbart and bart.
-ntree=200; nburn=1000; nsim=10000
-ntree=20; nburn=20; nsim=20
+ntree=200; nburn=100; nsim=250
+
 #-------------------------------------------------------------------------
 # Install tsbart and fastbart packages.
 #-------------------------------------------------------------------------
@@ -32,10 +31,7 @@ ntree=20; nburn=20; nsim=20
 library(devtools)    # For installing packages via github.
 install_github('jestarling/tsbart')
 library(tsbart)
-
-# Install fastbart package from local directory. (Vanilla BART first, for propensity scores).
-install.packages('./fastbart-path/fastbart_1.0.tar.gz', type='source', repos=NULL)
-library(fastbart)
+library(dbarts)
 
 # Install packages for splines and TGP.
 library(splines)
@@ -50,9 +46,6 @@ library(cowplot)
 library(ggthemes)
 library(viridis)
 
-# ggplot settings
-theme_set(theme_bw(base_size=13, base_family='Helvetica'))
-
 # Set output directories.
 out.fig = './output-figures/'
 out.csv = './output-files/'
@@ -62,6 +55,10 @@ source('./code/helper-functions/stillbirth-functions-modelfitutils.R')
 source('./code/helper-functions/stillbirth-functions-cvutils.R')
 source('./code/helper-functions/stillbirth-functions-testtrain-split.R')
 source('./code/helper-functions/stillbirth-functions-binll.R')
+source('./code/helper-functions/ggtheme-publication.R')
+
+# ggplot settings
+theme_set(theme_bw(base_size=16, base_family='Helvetica'))
 
 ###########################################################################
 # DATA LOAD AND PREP
@@ -130,8 +127,11 @@ cv_sp2 = spline_fit_util(train, test, spline_interactions=TRUE)
 # Fit p-splines model.
 cv_pensp = penspline_fit_util(train, test)
 
+# Fit random forest model.
+cv_rf = rf_fit_util(train, test)
+
 # Extract fits.
-test = extractFits(test, cv_tsb, cv_vb, cv_sp1, cv_sp2, cv_pensp, cv_tsb_default, adjust=T)
+test = extractFits(test, cv_tsb, cv_vb, cv_sp1, cv_sp2, cv_pensp, cv_rf, cv_tsb_default, adjust=T)
 ptpanel = test %>% filter(testtrain=='panel')
 
 
@@ -143,13 +143,15 @@ ptpanel$gest_age = ptpanel$gest_age34 + 33
 y_limits = c(0,6)
 ids_newplt = c(5000001, 5000002, 5000004, 5000027, 5000032)
 
+bkg_linetype = 2
+
 row1 = panplt_tsb_combos = ggplot((ptpanel %>% filter(id %in% ids_newplt)), aes(x=gest_age, y=phat_oos_tsb), colour='black') +
-   geom_line(aes(y=phat_oos_vb), colour='grey70') +
-   geom_line(aes(y=phat_oos_sp1), colour='grey70') +
-   geom_line(aes(y=phat_oos_sp2), colour='grey70') +
-   geom_line(aes(y=phat_oos_pensp), colour='grey70') +
+   geom_line(aes(y=phat_oos_vb), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_sp1), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_sp2), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_pensp), colour='grey60', linetype=bkg_linetype ) +
    geom_ribbon(aes(x=gest_age, ymin=phat_oos_tsb_lb, ymax=phat_oos_tsb_ub), alpha=0.35, fill='dodgerblue4') +
-   geom_line() +
+   geom_line(size=.75,colour='blue') +
    facet_wrap(~label, ncol=length(ids_newplt)) +
    coord_cartesian(ylim=y_limits) +
    labs(x='',y='tsBART') +
@@ -159,15 +161,17 @@ row1 = panplt_tsb_combos = ggplot((ptpanel %>% filter(id %in% ids_newplt)), aes(
       axis.text.x=element_blank()
    ) +
    scale_x_continuous(expand=c(0,0)) + theme(panel.spacing.x=unit(1.25,"lines")) +
-   cowplot::background_grid(major = "xy", minor = "none", colour.major = 'grey85') 
+      cowplot::background_grid(major = "xy", minor = "none", colour.major = 'grey85') +
+   cowplot::panel_border(colour = "black", size = 0.5, linetype = 1, remove = FALSE) +
+   theme(plot.margin = unit(c(0, .2, 0, .05), "cm"))
 
 row2 = ggplot((ptpanel %>% filter(id %in% ids_newplt)), aes(x=gest_age, y=phat_oos_vb), colour='black') +
-   geom_line(aes(y=phat_oos_tsb), colour='grey70') +
-   geom_line(aes(y=phat_oos_sp1), colour='grey70') +
-   geom_line(aes(y=phat_oos_sp2), colour='grey70') +
-   geom_line(aes(y=phat_oos_pensp), colour='grey70') +
+   geom_line(aes(y=phat_oos_tsb), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_sp1), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_sp2), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_pensp), colour='grey60', linetype=bkg_linetype ) +
    geom_ribbon(aes(x=gest_age, ymin=phat_oos_vb_lb, ymax=phat_oos_vb_ub), alpha=0.35, fill='dodgerblue4') +
-   geom_line() +
+   geom_line(size=.75,colour='blue') +
    facet_wrap(~label, ncol=length(ids_newplt)) +
    labs(x = '',y='BART') +
    coord_cartesian(ylim=y_limits) +
@@ -177,15 +181,17 @@ row2 = ggplot((ptpanel %>% filter(id %in% ids_newplt)), aes(x=gest_age, y=phat_o
       strip.text.x = element_blank(),
       axis.text.x=element_blank()
    ) +
-   cowplot::background_grid(major = "xy", minor = "none", colour.major = 'grey85')
+   cowplot::background_grid(major = "xy", minor = "none", colour.major = 'grey85') +
+   cowplot::panel_border(colour = "black", size = 0.5, linetype = 1, remove = FALSE)+
+   theme(plot.margin = unit(c(0, .2, 0, .05), "cm"))
 
 row3 = ggplot((ptpanel %>% filter(id %in% ids_newplt)), aes(x=gest_age, y=phat_oos_sp1), colour='black') +
-   geom_line(aes(y=phat_oos_tsb), colour='grey70') +
-   geom_line(aes(y=phat_oos_vb), colour='grey70') +
-   geom_line(aes(y=phat_oos_sp2), colour='grey70') +
-   geom_line(aes(y=phat_oos_pensp), colour='grey70') +
+   geom_line(aes(y=phat_oos_tsb), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_vb), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_sp2), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_pensp), colour='grey60', linetype=bkg_linetype ) +
    geom_ribbon(aes(x=gest_age, ymin=phat_oos_sp1_lb, ymax=phat_oos_sp1_ub), alpha=0.35, fill='dodgerblue4') +
-   geom_line() +
+   geom_line(size=.75,colour='blue') +
    facet_wrap(~label, ncol=length(ids_newplt)) +
    labs(x = '',y='Splines 1') +
    coord_cartesian(ylim=y_limits) +
@@ -195,15 +201,17 @@ row3 = ggplot((ptpanel %>% filter(id %in% ids_newplt)), aes(x=gest_age, y=phat_o
       strip.text.x = element_blank(),
       axis.text.x=element_blank()
    ) +
-   cowplot::background_grid(major = "xy", minor = "none", colour.major = 'grey85')
+   cowplot::background_grid(major = "xy", minor = "none", colour.major = 'grey85') +
+   cowplot::panel_border(colour = "black", size = 0.5, linetype = 1, remove = FALSE)+
+   theme(plot.margin = unit(c(0, .2, 0, .05), "cm"))
 
 row4 = ggplot((ptpanel %>% filter(id %in% ids_newplt)), aes(x=gest_age, y=phat_oos_sp2), colour='black') +
-   geom_line(aes(y=phat_oos_tsb), colour='grey70') +
-   geom_line(aes(y=phat_oos_vb), colour='grey70') +
-   geom_line(aes(y=phat_oos_sp1), colour='grey70') +
-   geom_line(aes(y=phat_oos_pensp), colour='grey70') +
+   geom_line(aes(y=phat_oos_tsb), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_vb), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_sp1), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_pensp), colour='grey60', linetype=bkg_linetype ) +
    geom_ribbon(aes(x=gest_age, ymin=phat_oos_sp2_lb, ymax=phat_oos_sp2_ub), alpha=0.35, fill='dodgerblue4') +
-   geom_line() +
+   geom_line(size=.75,colour='blue') +
    facet_wrap(~label, ncol=length(ids_newplt)) +
    labs(x = '',y='Splines 2') +
    coord_cartesian(ylim=y_limits) +
@@ -213,15 +221,17 @@ row4 = ggplot((ptpanel %>% filter(id %in% ids_newplt)), aes(x=gest_age, y=phat_o
       strip.text.x = element_blank(),
       axis.text.x=element_blank()
    ) +
-   cowplot::background_grid(major = "xy", minor = "none", colour.major = 'grey85')
+   cowplot::background_grid(major = "xy", minor = "none", colour.major = 'grey85') +
+   cowplot::panel_border(colour = "black", size = 0.5, linetype = 1, remove = FALSE)+
+   theme(plot.margin = unit(c(0, .2, 0, .05), "cm"))
 
 row5 = ggplot((ptpanel %>% filter(id %in% ids_newplt)), aes(x=gest_age, y=phat_oos_pensp), colour='black') +
-   geom_line(aes(y=phat_oos_tsb), colour='grey70') +
-   geom_line(aes(y=phat_oos_vb), colour='grey70') +
-   geom_line(aes(y=phat_oos_sp1), colour='grey70') +
-   geom_line(aes(y=phat_oos_sp2), colour='grey70') +
+   geom_line(aes(y=phat_oos_tsb), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_vb), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_sp1), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_sp2), colour='grey60', linetype=bkg_linetype ) +
    geom_ribbon(aes(x=gest_age, ymin=phat_oos_pensp_lb, ymax=phat_oos_pensp_ub), alpha=0.35, fill='dodgerblue4') +
-   geom_line() +
+   geom_line(size=.75,colour='blue') +
    facet_wrap(~label, ncol=length(ids_newplt)) +
    labs(x = '',y='P-splines') +
    coord_cartesian(ylim=y_limits) +
@@ -230,12 +240,32 @@ row5 = ggplot((ptpanel %>% filter(id %in% ids_newplt)), aes(x=gest_age, y=phat_o
       strip.background = element_blank(),
       strip.text.x = element_blank()
    ) +
-   cowplot::background_grid(major = "xy", minor = "none", colour.major = 'grey85')
+   cowplot::background_grid(major = "xy", minor = "none", colour.major = 'grey85') +
+   cowplot::panel_border(colour = "black", size = 0.5, linetype = 1, remove = FALSE)+
+   theme(plot.margin = unit(c(0, .2, 0, .05), "cm"))
 
+row6 = ggplot((ptpanel %>% filter(id %in% ids_newplt)), aes(x=gest_age, y=phat_oos_rf), colour='black') +
+   geom_line(aes(y=phat_oos_tsb), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_vb), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_sp1), colour='grey60', linetype=bkg_linetype ) +
+   geom_line(aes(y=phat_oos_sp2), colour='grey60', linetype=bkg_linetype ) +
+   geom_ribbon(aes(x=gest_age, ymin=phat_oos_rf_lb, ymax=phat_oos_rf_ub), alpha=0.35, fill='dodgerblue4') +
+   geom_line(size=.75,colour='blue') +
+   facet_wrap(~label, ncol=length(ids_newplt)) +
+   labs(x = '',y='Random Forest') +
+   coord_cartesian(ylim=y_limits) +
+   scale_x_continuous(expand=c(0,0)) + theme(panel.spacing.x=unit(1.25,"lines"))  +
+   theme(
+      strip.background = element_blank(),
+      strip.text.x = element_blank()
+   ) +
+   cowplot::background_grid(major = "xy", minor = "none", colour.major = 'grey85') +
+   cowplot::panel_border(colour = "black", size = 0.5, linetype = 1, remove = FALSE) +
+   theme(plot.margin = unit(c(.2, .2, .2, .2), "cm"))
 
 library(grid)
 grid.newpage()
-all = grid.arrange(row1, row2, row3, row4, row5, 
+all = grid.arrange(row1, row2, row3, row4, row5,
              ncol=1,
              bottom='Gestational age (Wks)',
              left='Risk of stillbirth per 1,000 remaining pregnancies',
@@ -243,3 +273,9 @@ all = grid.arrange(row1, row2, row3, row4, row5,
 
 ggsave(paste0(out.fig,'figure-05.pdf'), all,
        width=8, height=8, units='in', dpi=300, limitsize=TRUE)
+
+
+# Plot random forest separately.
+ggsave(paste0(out.fig,'figure-07.pdf'),row6, width=8, height=2, dpi=300, limitsize=TRUE)
+
+save.image("./stillbirth-workspace.RData")
