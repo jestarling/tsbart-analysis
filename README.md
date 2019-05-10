@@ -1,7 +1,7 @@
 # BART with Targeted Smoothing: Analysis
-This repository contains code to replicate figures and tables in the paper "BART with Targeted Smoothing: An analysis of patient-specific stillbirth risk", by Starling et al (2018).
+This repository contains code to replicate figures and tables in the paper "BART with Targeted Smoothing: An analysis of patient-specific stillbirth risk", by Starling et al (2019).
 
-Note that many of these scripts use the **fastbart** R package for comparing tsBART with regular BART.  This package is not publicly available, but can be provided on request.  
+Note that many of these scripts use the **dbarts** R package for comparing tsBART with regular BART.  This package is available on CRAN (https://cran.r-project.org/package=dbarts).
 
 The following are instructions for the workflow to replicate the analysis.
 
