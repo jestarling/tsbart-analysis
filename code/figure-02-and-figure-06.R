@@ -35,7 +35,7 @@ source('./code/helper-functions/ggtheme-publication.R')
 theme_set(theme_bw(base_size=16, base_family='Helvetica'))
 
 # Output directories.
-out.fig = paste0(getwd(),'./output-figures/')
+out.fig = paste0(getwd(),'/output-figures/')
 
 
 ##################################################################################
@@ -240,17 +240,28 @@ tsb_meanll = round(mean(ll_oos),2)
 vb_meanll = round(mean(ll_oos_v),2)
 
 # Create plot.
-llplt = ggplot(lldf_t, aes(x=ll, fill=model)) + 
-   geom_density(alpha=.6,na.rm=T) +
-   scale_fill_manual(values = c('grey10','grey60'), 
-                     #labels=c(paste0('tsBART (',tsb_meanll,')'), paste0('BART (',vb_meanll,')')), 
-                     labels=c(paste0('tsBART'), paste0('BART')), 
-                     name=' ') +
-   labs(x = 'Log Loss', y = 'Density') +
-   theme(strip.text.x = element_text(size = 13, colour = "black", angle = 0)) +
-   theme(legend.position='top') +
-   scale_x_continuous(expand=c(0,0)) +
-   theme_Publication()
+#llplt = ggplot(lldf_t, aes(x=ll, fill=model)) + 
+#   geom_density(alpha=.6,na.rm=T) +
+#   scale_fill_manual(values = c('grey10','grey60'), 
+#                     #labels=c(paste0('tsBART (',tsb_meanll,')'), paste0('BART (',vb_meanll,')')), 
+#                     labels=c(paste0('tsBART'), paste0('BART')), 
+#                     name=' ') +
+#   labs(x = 'Log Loss', y = 'Density') +
+#   theme(strip.text.x = element_text(size = 13, colour = "black", angle = 0)) +
+#   theme(legend.position='top') +
+#   scale_x_continuous(expand=c(0,0)) +
+#   theme_Publication()
+#llplt
+
+llplt = ggplot(lldf_t, aes(x=model, y=ll)) +
+   geom_boxplot() +
+   scale_x_discrete(labels=c(paste0('tsBART\n(',tsb_meanll,')'),
+                             paste0('BART\n(',vb_meanll,')'))) +
+   theme_Publication() +
+   labs(x='Model',
+        y='Mean log-losses conditional on time') +
+   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
 
 
 ################################################################
