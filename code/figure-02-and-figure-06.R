@@ -119,7 +119,7 @@ ggdf_pred$pred_int_lb = ggdf_pred$lb - mean(fit$sigma)
 ggdf_pred$pred_int_ub = ggdf_pred$ub + mean(fit$sigma)
 
 # Select a few IDs to include.
-id_sel = c(5,41,79,98)
+id_sel = c(5,41,78,98)
 
 # Set plotting limits.
 ylims = c(min(ggdf_pred$pred_int_lb)-.5, max(ggdf_pred$pred_int_ub)+.5)
