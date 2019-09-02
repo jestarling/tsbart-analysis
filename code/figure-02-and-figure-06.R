@@ -77,12 +77,13 @@ xx = train[xcols]; x_pred = test[xcols]     # Matrix of predicted covariates.
 # Evaluate optimal number of crossings.
 ecross_candidates = seq(.5,5,by=.5)
 ecrossTune = tuneEcross(ecross_candidates,
-                        y=y, tgt=ti, tpred=ti_pred,
-                        x=xx, xpred=x_pred, nburn=50, nsim=50, ntree=200)
+                        y=y, tgt=ti, 
+                        x=xx, nburn=250, nsim=250, ntree=200)
 
 # Set expected number of crossings.
 exp_cross = ecrossTune$ecross_opt
 waic_plt = ecrossTune$waic_plot + theme_Publication()
+
 
 # Output figure for appendix.
 ggsave(paste0(out.fig,"figure-06.pdf"),
@@ -163,9 +164,6 @@ nu = 3
 sigq = .9
 qchi = qchisq(1.0-sigq,nu)
 lambda = (sighat*sighat*qchi)/nu
-
-# Update cutpoints to include t.
-cutpoints = makeCutpoints(xx)
 
 # Fit BART model.
 xcols = c(xcols,which(colnames(train)=='ti'))

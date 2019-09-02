@@ -70,7 +70,7 @@ tsbart_fit_util = function(train, test, xcols, yvar='fd', tvar='gest_age34',
 
       # Evaluate optimal number of crossings.
       ecrossTune = tuneEcross(ecross_candidates, 
-                              y=y, tgt=tgt, tpred=tpred, x=xx, xpred=xpred,
+                              y=y, tgt=tgt, x=xx, 
                               nburn=250, nsim=200, ntree=200,
                               yobs=yobs, probit=T)
 
